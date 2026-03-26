@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/flight_session_controller.dart';
+import '../../core/breath/breath_envelope.dart';
 import 'platform/haptic_platform.dart';
 
 /// 以固定节拍采样呼吸包络，驱动渐进式触觉（避免每帧调用）。
@@ -32,15 +32,15 @@ class HapticScheduler {
 
     final tuning = r.read(flightSessionProvider).tuning;
     final elapsed = DateTime.now().millisecondsSinceEpoch / 1000.0;
-    final breath = math.sin(2 * math.pi * tuning.breathHz * elapsed);
-    final env = 0.35 + 0.65 * (0.5 + 0.5 * breath);
-    final base = (env * _intensityMul).clamp(0.0, 1.0);
+    final env01 = breathEnvelope01(elapsed, tuning);
+    final base = (env01 * tuning.hapticGain * _intensityMul).clamp(0.0, 1.0);
 
     if (tuning.flowSpeed < 0.05 && tuning.breathAmplitude < 0.03) {
       return;
     }
 
-    final amp = (base * 255).round().clamp(1, 255);
+    final shaped = 0.35 + 0.65 * base;
+    final amp = (shaped * 255).round().clamp(1, 255);
     final ampSoft = (amp * 0.55).round().clamp(1, 255);
 
     await _platform.playWaveform(

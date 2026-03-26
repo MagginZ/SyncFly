@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../core/breath/breath_envelope.dart';
 import '../../domain/flight/flight_visual_tuning.dart';
 
 class VestibularFlowPainter extends CustomPainter {
@@ -17,9 +18,8 @@ class VestibularFlowPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final breath = 1.0 +
-        tuning.breathAmplitude *
-            math.sin(2 * math.pi * tuning.breathHz * time);
+    final scale = breathParticleScale(time, tuning);
+    final opacityBreath = breathOpacityFactor(time, tuning);
 
     final rnd = math.Random(42);
     final basePaint = Paint()..style = PaintingStyle.fill;
@@ -39,10 +39,10 @@ class VestibularFlowPainter extends CustomPainter {
       x = _wrap(x + driftX, size.width);
       y = _wrap(y + driftY, size.height);
 
-      final opacity = (0.14 + 0.22 * (i / _particleCount)) * breath;
+      final opacity = (0.14 + 0.22 * (i / _particleCount)) * opacityBreath;
       basePaint.color =
           Colors.white.withValues(alpha: opacity.clamp(0.04, 0.88));
-      final r = (1.1 + (i % 5)) * breath;
+      final r = (1.1 + (i % 5)) * scale;
       canvas.drawCircle(Offset(x, y), r, basePaint);
     }
   }

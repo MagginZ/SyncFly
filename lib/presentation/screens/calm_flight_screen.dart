@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/flight_session_controller.dart';
+import '../../core/breath/breath_envelope.dart';
 import '../../services/audio/ambient_audio_service.dart';
 import '../widgets/body_guidance_banner.dart';
 import '../widgets/particle_flow_field.dart';
@@ -16,6 +19,7 @@ class CalmFlightScreen extends ConsumerStatefulWidget {
 class _CalmFlightScreenState extends ConsumerState<CalmFlightScreen> {
   late final AmbientAudioService _audio;
   var _audioPrimed = false;
+  Timer? _audioBreathTimer;
 
   @override
   void initState() {
@@ -36,8 +40,30 @@ class _CalmFlightScreenState extends ConsumerState<CalmFlightScreen> {
     });
   }
 
+  void _startAudioBreathModulation() {
+    _audioBreathTimer?.cancel();
+    _audioBreathTimer = Timer.periodic(const Duration(milliseconds: 110), (_) {
+      if (!mounted) return;
+      final session = ref.read(flightSessionProvider);
+      if (!session.hapticSessionActive) return;
+      final settings = ref.read(sessionSettingsProvider);
+      final t = DateTime.now().millisecondsSinceEpoch / 1000.0;
+      final e = breathEnvelope01(t, session.tuning);
+      final vol = settings.masterVolume * (0.52 + 0.48 * e);
+      _audio.setVolume(vol);
+    });
+  }
+
+  void _stopAudioBreathModulation() {
+    _audioBreathTimer?.cancel();
+    _audioBreathTimer = null;
+    final base = ref.read(sessionSettingsProvider).masterVolume;
+    _audio.setVolume(base);
+  }
+
   @override
   void dispose() {
+    _audioBreathTimer?.cancel();
     _audio.dispose();
     super.dispose();
   }
@@ -48,20 +74,53 @@ class _CalmFlightScreenState extends ConsumerState<CalmFlightScreen> {
     final settings = ref.watch(sessionSettingsProvider);
 
     ref.listen(sessionSettingsProvider, (_, next) {
-      _audio.setVolume(next.masterVolume);
+      if (!ref.read(flightSessionProvider).hapticSessionActive) {
+        _audio.setVolume(next.masterVolume);
+      }
       ref.read(flightSessionProvider.notifier).refreshTuningFromSettings();
     });
 
     ref.listen(flightSessionProvider.select((s) => s.hapticSessionActive),
         (prev, active) async {
       if (active) {
-        final vol = ref.read(sessionSettingsProvider).masterVolume;
-        await _audio.setVolume(vol);
-        if (_audio.isPrepared && mounted) await _audio.resume();
-      } else if (mounted) {
-        await _audio.pause();
+        await _audio.setVolume(ref.read(sessionSettingsProvider).masterVolume);
+        if (_audio.isPrepared && mounted) {
+          await _audio.resume();
+          _startAudioBreathModulation();
+        }
+      } else {
+        _stopAudioBreathModulation();
+        if (mounted) await _audio.pause();
       }
     });
+
+    final midTakeoff = session.phase.maybeMap(
+      taxiing: (_) => true,
+      takeoffAcceleration: (_) => true,
+      liftoffClimb: (_) => true,
+      orElse: () => false,
+    );
+
+    final showEnterCruise = session.phase.maybeMap(
+      awaitingCruise: (_) => true,
+      orElse: () => false,
+    );
+
+    final showStartDescent = session.phase.maybeMap(
+      cruising: (_) => true,
+      orElse: () => false,
+    );
+
+    final showStableAfterDescent = session.phase.maybeMap(
+      descent: (_) => true,
+      orElse: () => false,
+    );
+
+    final atIdle = session.phase.maybeMap(
+      idle: (_) => true,
+      orElse: () => false,
+    ) ==
+        true;
 
     return Scaffold(
       body: Stack(
@@ -110,39 +169,56 @@ class _CalmFlightScreenState extends ConsumerState<CalmFlightScreen> {
                       children: [
                         Expanded(
                           child: FilledButton(
-                            onPressed: session.demoRunning
+                            onPressed: session.takeoffSequenceRunning || !atIdle
                                 ? null
                                 : () => ref
                                     .read(flightSessionProvider.notifier)
-                                    .runTakeoffDemo(),
-                            child: Text(session.demoRunning ? '起降进行中…' : '开始起飞'),
+                                    .runTakeoffSequence(),
+                            child: Text(
+                              session.takeoffSequenceRunning
+                                  ? '起飞进行中…'
+                                  : '开始起飞',
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        IconButton.filledTonal(
-                          tooltip: '预览降落向上补偿流场',
-                          onPressed: session.demoRunning
-                              ? null
-                              : () => ref
-                                  .read(flightSessionProvider.notifier)
-                                  .previewLandingFlow(),
-                          icon: const Icon(Icons.flight_land_rounded),
                         ),
                       ],
                     ),
-                    if (session.demoRunning)
+                    if (session.takeoffSequenceRunning || session.descentRunning)
                       TextButton(
                         onPressed: () => ref
                             .read(flightSessionProvider.notifier)
-                            .stopDemo(),
-                        child: const Text('停止起降流程'),
+                            .abortToIdle(),
+                        child: const Text('中止并回准备'),
                       ),
-                    if (session.hapticSessionActive)
+                    if (midTakeoff && session.hapticSessionActive)
+                      TextButton(
+                        onPressed: () => ref
+                            .read(flightSessionProvider.notifier)
+                            .confirmStopHapticsOnly(),
+                        child: const Text('仅关闭触觉'),
+                      ),
+                    if (showEnterCruise)
                       FilledButton.tonal(
                         onPressed: () => ref
                             .read(flightSessionProvider.notifier)
-                            .confirmStopHaptics(),
-                        child: const Text('已平稳，关闭触觉'),
+                            .confirmEnterCruise(),
+                        child: const Text('已平稳，进入平飞'),
+                      ),
+                    if (showStartDescent && !session.descentRunning)
+                      FilledButton.tonal(
+                        onPressed: session.takeoffSequenceRunning
+                            ? null
+                            : () => ref
+                                .read(flightSessionProvider.notifier)
+                                .startDescent(),
+                        child: const Text('开始下降'),
+                      ),
+                    if (showStableAfterDescent)
+                      FilledButton.tonal(
+                        onPressed: () => ref
+                            .read(flightSessionProvider.notifier)
+                            .confirmStableAfterDescent(),
+                        child: const Text('已平稳'),
                       ),
                   ],
                 ),
