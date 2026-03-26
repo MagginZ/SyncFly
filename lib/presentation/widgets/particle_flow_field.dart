@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/flight_session_controller.dart';
 import '../../core/breath/breath_envelope.dart';
 import '../../domain/flight/breath_pattern_kind.dart';
+import '../../domain/flight/flight_phase.dart';
 import '../../services/haptics/haptic_scheduler.dart';
 import '../../services/haptics/platform/haptic_platform.dart';
 import '../painters/kinetic_monolith_painter.dart';
@@ -27,7 +28,8 @@ class _ParticleFlowFieldState extends ConsumerState<ParticleFlowField>
 
   final List<MonolithParticle> _particles = [];
   Size? _canvasSize;
-  double _flightVelocity = 0;
+  double _smoothedDx = 0;
+  double _smoothedDy = 0;
 
   late final HapticScheduler _haptics;
 
@@ -95,34 +97,63 @@ class _ParticleFlowFieldState extends ConsumerState<ParticleFlowField>
       _initParticles(size);
     }
 
-    final takeoffLike = session.phase.maybeMap(
-      taxiing: (_) => true,
-      takeoffAcceleration: (_) => true,
-      liftoffClimb: (_) => true,
-      orElse: () => false,
-    );
-    final targetVel = takeoffLike ? 1.0 : -0.2;
-    _flightVelocity += (targetVel - _flightVelocity) * (1 - math.exp(-dt * 10));
+    var fx = tuning.flowDirectionX;
+    var fy = tuning.flowDirectionY;
+    final dirLen = math.sqrt(fx * fx + fy * fy);
+    if (dirLen > 1e-6) {
+      fx /= dirLen;
+      fy /= dirLen;
+    } else {
+      fx = 0;
+      fy = 0;
+    }
+
+    /// 漂移强度（像素）：与 [FlightVisualTuning.flowSpeed]、用户动画速率一致。
+    final driftScale = 44.0 * rate;
+    final targetDx = fx * tuning.flowSpeed * driftScale;
+    final targetDy = fy * tuning.flowSpeed * driftScale;
+    final smoothK = 1 - math.exp(-dt * 9);
+    _smoothedDx += (targetDx - _smoothedDx) * smoothK;
+    _smoothedDy += (targetDy - _smoothedDy) * smoothK;
 
     final hold = tuning.breathPattern == BreathPatternKind.fourSevenEight &&
         breathIsHold478(_flowTimeSec);
 
+    /// 滑行：视觉后移，轨道角速度与默认方向相反；其余阶段按调参方向运动。
+    final orbitSign = _orbitRotationSign(session.phase);
+
+    /// 轨道角速度：屏息时减半；基础频率 = flowSpeed × 动画速率，并用 breathHz 做轻微呼吸脉动。
+    final breathOrbitPulse =
+        1.0 + 0.22 * math.sin(2 * math.pi * tuning.breathHz * _flowTimeSec);
+    final orbitMul = (hold ? 0.5 : 1.0) *
+        rate *
+        60.0 *
+        dt *
+        tuning.flowSpeed *
+        breathOrbitPulse.clamp(0.82, 1.18);
+
     final cx = size.width / 2;
     final cy = size.height / 2;
     final breathScale = breathRadialScaleMonolith(_flowTimeSec, tuning);
-    final angleMul = (hold ? 0.5 : 1.0) * rate * 60.0 * dt;
     final follow = 1 - math.exp(-dt * 3.1);
 
     for (final p in _particles) {
-      p.angle += p.speed * angleMul;
+      p.angle += orbitSign * p.speed * orbitMul;
       final expansion = breathScale * p.distance;
-      final verticalDrift = _flightVelocity * (2 + p.radius * 2);
-      final targetX = cx + math.cos(p.angle) * expansion;
-      final targetY =
-          cy + math.sin(p.angle) * expansion + verticalDrift * 20;
+      final w = 2 + p.radius * 0.35;
+      final targetX = cx + math.cos(p.angle) * expansion + _smoothedDx * w;
+      final targetY = cy + math.sin(p.angle) * expansion + _smoothedDy * w;
       p.x += (targetX - p.x) * follow;
       p.y += (targetY - p.y) * follow;
     }
+  }
+
+  /// 仅滑行阶段反转径向粒子的切向旋转，强化「视野后移」与默认环流相反。
+  int _orbitRotationSign(FlightPhase phase) {
+    return phase.maybeMap(
+      taxiing: (_) => -1,
+      orElse: () => 1,
+    );
   }
 
   @override
@@ -160,7 +191,6 @@ class _ParticleFlowFieldState extends ConsumerState<ParticleFlowField>
           particles: _particles,
           timeSec: _flowTimeSec,
           tuning: session.tuning,
-          flightVelocity: _flightVelocity,
         ),
         child: const SizedBox.expand(),
       ),

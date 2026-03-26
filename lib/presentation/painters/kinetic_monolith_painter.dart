@@ -37,13 +37,11 @@ class KineticMonolithPainter extends CustomPainter {
     required this.particles,
     required this.timeSec,
     required this.tuning,
-    required this.flightVelocity,
   });
 
   final List<MonolithParticle> particles;
   final double timeSec;
   final FlightVisualTuning tuning;
-  final double flightVelocity;
 
   static const Color _primary = Color(0xFF9FFF88);
   static const Color _secondary = Color(0xFF8FF9A4);
@@ -82,24 +80,37 @@ class KineticMonolithPainter extends CustomPainter {
         ? 0.6
         : 1.0;
 
+    var fx = tuning.flowDirectionX;
+    var fy = tuning.flowDirectionY;
+    final dirLen = math.sqrt(fx * fx + fy * fy);
+    if (dirLen > 1e-6) {
+      fx /= dirLen;
+      fy /= dirLen;
+    } else {
+      fx = 0;
+      fy = 0;
+    }
+    final flowMag = tuning.flowSpeed.clamp(0.0, 1.5);
+
     for (final p in particles) {
       final color = p.colorMint ? _primary : _secondary;
       final alpha = (p.opacity * exhaleDim).clamp(0.0, 1.0);
 
-      if (flightVelocity > 0.5 && p.isStreak) {
+      /// 流动线条与粒子运动方向相反（尾迹拖在「来向」一侧）。
+      if (flowMag > 0.32 && p.isStreak) {
         final streakPaint = Paint()
           ..color = color.withValues(alpha: alpha)
           ..strokeWidth = 0.5
           ..style = PaintingStyle.stroke;
-        final len = 15 * flightVelocity;
+        final len = 14 * flowMag;
         canvas.drawLine(
           Offset(p.x, p.y),
-          Offset(p.x, p.y - len),
+          Offset(p.x - fx * len, p.y - fy * len),
           streakPaint,
         );
       }
 
-      final rScale = flightVelocity > 0.2 ? 1.2 : 1.0;
+      final rScale = 1.0 + 0.22 * flowMag;
       final solid = Paint()..color = color.withValues(alpha: alpha);
       canvas.drawCircle(Offset(p.x, p.y), p.radius * rScale, solid);
 
@@ -125,8 +136,6 @@ class KineticMonolithPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant KineticMonolithPainter oldDelegate) {
-    return oldDelegate.timeSec != timeSec ||
-        oldDelegate.flightVelocity != flightVelocity ||
-        oldDelegate.tuning != tuning;
+    return oldDelegate.timeSec != timeSec || oldDelegate.tuning != tuning;
   }
 }
