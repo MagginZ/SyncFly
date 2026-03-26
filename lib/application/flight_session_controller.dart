@@ -23,7 +23,6 @@ class FlightSessionState {
     required this.phase,
     required this.blendT,
     required this.tuning,
-    required this.takeoffSequenceRunning,
     required this.hapticSessionActive,
     required this.descentRunning,
   });
@@ -32,10 +31,7 @@ class FlightSessionState {
   final double blendT;
   final FlightVisualTuning tuning;
 
-  /// 起飞链：滑行→加速→拉起 自动进行中。
-  final bool takeoffSequenceRunning;
-
-  /// 触觉会话：起飞/下降阶段由用户操作开启，「进入平飞」或「已平稳」关闭。
+  /// 触觉会话：起飞链与下降阶段由用户点按钮开启；进入平飞或下降结束会关闭。
   final bool hapticSessionActive;
 
   /// 下降引导是否进行中（可由「已平稳」结束）。
@@ -45,7 +41,6 @@ class FlightSessionState {
     FlightPhase? phase,
     double? blendT,
     FlightVisualTuning? tuning,
-    bool? takeoffSequenceRunning,
     bool? hapticSessionActive,
     bool? descentRunning,
   }) {
@@ -53,7 +48,6 @@ class FlightSessionState {
       phase: phase ?? this.phase,
       blendT: blendT ?? this.blendT,
       tuning: tuning ?? this.tuning,
-      takeoffSequenceRunning: takeoffSequenceRunning ?? this.takeoffSequenceRunning,
       hapticSessionActive: hapticSessionActive ?? this.hapticSessionActive,
       descentRunning: descentRunning ?? this.descentRunning,
     );
@@ -70,7 +64,6 @@ class FlightSessionNotifier extends StateNotifier<FlightSessionState> {
               const FlightPhase.idle(),
               const SessionSettings(),
             ),
-            takeoffSequenceRunning: false,
             hapticSessionActive: false,
             descentRunning: false,
           ),
@@ -78,7 +71,6 @@ class FlightSessionNotifier extends StateNotifier<FlightSessionState> {
 
   final Ref _ref;
   Timer? _blendTimer;
-  int _takeoffGen = 0;
 
   void cancelBlend() {
     _blendTimer?.cancel();
@@ -113,7 +105,6 @@ class FlightSessionNotifier extends StateNotifier<FlightSessionState> {
     return completer.future;
   }
 
-  /// 滑块等变更 [SessionSettings] 后调用，使流速/呼吸等即时反映到当前阶段。
   void refreshTuningFromSettings() {
     if (_blendTimer != null) return;
     final settings = _ref.read(sessionSettingsProvider);
@@ -129,82 +120,50 @@ class FlightSessionNotifier extends StateNotifier<FlightSessionState> {
     refreshTuningFromSettings();
   }
 
-  /// 仅关闭触觉，不改变阶段（起飞中途紧急用）。
+  /// 仅关闭触觉，不改变阶段。
   void confirmStopHapticsOnly() {
     state = state.copyWith(hapticSessionActive: false);
   }
 
-  /// 在 awaitingCruise：关闭触觉并进入平飞。
-  Future<void> confirmEnterCruise() async {
-    final ok = state.phase.maybeMap(
-      awaitingCruise: (_) => true,
+  /// 准备 → 滑行（开启触觉）。
+  Future<void> startTakeoffToTaxiing() async {
+    if (!state.phase.maybeMap(idle: (_) => true, orElse: () => false)) return;
+    state = state.copyWith(hapticSessionActive: true);
+    await setPhase(const FlightPhase.taxiing());
+  }
+
+  /// 滑行 → 加速推背。
+  Future<void> confirmAcceleration() async {
+    if (!state.phase.maybeMap(taxiing: (_) => true, orElse: () => false)) return;
+    await setPhase(const FlightPhase.takeoffAcceleration());
+  }
+
+  /// 加速推背 → 拉起爬升。
+  Future<void> confirmLiftoffClimbPhase() async {
+    if (!state.phase.maybeMap(
+      takeoffAcceleration: (_) => true,
       orElse: () => false,
-    );
-    if (ok != true) return;
+    )) {
+      return;
+    }
+    await setPhase(const FlightPhase.liftoffClimb());
+  }
+
+  /// 拉起爬升 → 平飞（关闭触觉）。
+  Future<void> confirmEnterCruise() async {
+    if (!state.phase.maybeMap(
+      liftoffClimb: (_) => true,
+      orElse: () => false,
+    )) {
+      return;
+    }
     state = state.copyWith(hapticSessionActive: false);
     await setPhase(const FlightPhase.cruising());
   }
 
-  /// 在 descent：关闭触觉并回到准备。
-  Future<void> confirmStableAfterDescent() async {
-    final ok = state.phase.maybeMap(
-      descent: (_) => true,
-      orElse: () => false,
-    );
-    if (ok != true) return;
-    state = state.copyWith(hapticSessionActive: false, descentRunning: false);
-    await setPhase(const FlightPhase.idle());
-  }
-
-  /// 起飞：滑行 → 加速 → 拉起 → **待确认平飞**（不自动进入平飞文案）。
-  Future<void> runTakeoffSequence() async {
-    final gen = ++_takeoffGen;
-    final settings = _ref.read(sessionSettingsProvider);
-    final segment =
-        (settings.takeoffSequenceSeconds / 3).ceil().clamp(3, 120);
-
-    state = state.copyWith(
-      takeoffSequenceRunning: true,
-      hapticSessionActive: true,
-    );
-
-    Future<void> abortIfStale() async {
-      if (gen != _takeoffGen) throw _SequenceCancelled();
-    }
-
-    try {
-      await setPhase(const FlightPhase.taxiing());
-      await abortIfStale();
-      await Future<void>.delayed(Duration(seconds: segment));
-      await abortIfStale();
-
-      await setPhase(const FlightPhase.takeoffAcceleration());
-      await abortIfStale();
-      await Future<void>.delayed(Duration(seconds: segment));
-      await abortIfStale();
-
-      await setPhase(const FlightPhase.liftoffClimb());
-      await abortIfStale();
-      await Future<void>.delayed(Duration(seconds: segment));
-      await abortIfStale();
-
-      await setPhase(const FlightPhase.awaitingCruise());
-    } on _SequenceCancelled {
-      /* 被更新序列或中止 */
-    } finally {
-      if (gen == _takeoffGen) {
-        state = state.copyWith(takeoffSequenceRunning: false);
-      }
-    }
-  }
-
-  /// 从平飞进入下降引导（触觉再开）。
+  /// 平飞 → 下降（再开触觉）。
   Future<void> startDescent() async {
-    final ok = state.phase.maybeMap(
-      cruising: (_) => true,
-      orElse: () => false,
-    );
-    if (ok != true) return;
+    if (!state.phase.maybeMap(cruising: (_) => true, orElse: () => false)) return;
     state = state.copyWith(
       descentRunning: true,
       hapticSessionActive: true,
@@ -212,17 +171,20 @@ class FlightSessionNotifier extends StateNotifier<FlightSessionState> {
     await setPhase(const FlightPhase.descent());
   }
 
-  /// 中止起飞链或下降，回准备。
+  /// 下降结束 → 准备。
+  Future<void> confirmStableAfterDescent() async {
+    if (!state.phase.maybeMap(descent: (_) => true, orElse: () => false)) return;
+    state = state.copyWith(hapticSessionActive: false, descentRunning: false);
+    await setPhase(const FlightPhase.idle());
+  }
+
+  /// 任意阶段回准备。
   Future<void> abortToIdle() async {
-    _takeoffGen++;
     cancelBlend();
     state = state.copyWith(
-      takeoffSequenceRunning: false,
       hapticSessionActive: false,
       descentRunning: false,
     );
     await setPhase(const FlightPhase.idle());
   }
 }
-
-class _SequenceCancelled implements Exception {}

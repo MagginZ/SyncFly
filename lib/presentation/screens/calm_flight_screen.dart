@@ -101,11 +101,6 @@ class _CalmFlightScreenState extends ConsumerState<CalmFlightScreen> {
       orElse: () => false,
     );
 
-    final showEnterCruise = session.phase.maybeMap(
-      awaitingCruise: (_) => true,
-      orElse: () => false,
-    );
-
     final showStartDescent = session.phase.maybeMap(
       cruising: (_) => true,
       orElse: () => false,
@@ -118,6 +113,15 @@ class _CalmFlightScreenState extends ConsumerState<CalmFlightScreen> {
 
     final atIdle = session.phase.maybeMap(
       idle: (_) => true,
+      orElse: () => false,
+    ) ==
+        true;
+
+    final showTakeoffPrimary = session.phase.maybeMap(
+      idle: (_) => true,
+      taxiing: (_) => true,
+      takeoffAcceleration: (_) => true,
+      liftoffClimb: (_) => true,
       orElse: () => false,
     ) ==
         true;
@@ -165,25 +169,42 @@ class _CalmFlightScreenState extends ConsumerState<CalmFlightScreen> {
                           .update((s) => s.copyWith(masterVolume: v)),
                     ),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: session.takeoffSequenceRunning || !atIdle
-                                ? null
-                                : () => ref
-                                    .read(flightSessionProvider.notifier)
-                                    .runTakeoffSequence(),
-                            child: Text(
-                              session.takeoffSequenceRunning
-                                  ? '起飞进行中…'
-                                  : '开始起飞',
+                    if (showTakeoffPrimary)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FilledButton(
+                              onPressed: () async {
+                                final n = ref.read(
+                                  flightSessionProvider.notifier,
+                                );
+                                final p =
+                                    ref.read(flightSessionProvider).phase;
+                                await p.when(
+                                  idle: () => n.startTakeoffToTaxiing(),
+                                  taxiing: () => n.confirmAcceleration(),
+                                  takeoffAcceleration: () =>
+                                      n.confirmLiftoffClimbPhase(),
+                                  liftoffClimb: () => n.confirmEnterCruise(),
+                                  cruising: () => Future<void>.value(),
+                                  descent: () => Future<void>.value(),
+                                );
+                              },
+                              child: Text(
+                                session.phase.when(
+                                  idle: () => '开始起飞',
+                                  taxiing: () => '加速推背',
+                                  takeoffAcceleration: () => '拉起爬升',
+                                  liftoffClimb: () => '进入平飞',
+                                  cruising: () => '',
+                                  descent: () => '',
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    if (session.takeoffSequenceRunning || session.descentRunning)
+                        ],
+                      ),
+                    if (!atIdle || session.descentRunning)
                       TextButton(
                         onPressed: () => ref
                             .read(flightSessionProvider.notifier)
@@ -197,20 +218,11 @@ class _CalmFlightScreenState extends ConsumerState<CalmFlightScreen> {
                             .confirmStopHapticsOnly(),
                         child: const Text('仅关闭触觉'),
                       ),
-                    if (showEnterCruise)
+                    if (showStartDescent && !session.descentRunning)
                       FilledButton.tonal(
                         onPressed: () => ref
                             .read(flightSessionProvider.notifier)
-                            .confirmEnterCruise(),
-                        child: const Text('已平稳，进入平飞'),
-                      ),
-                    if (showStartDescent && !session.descentRunning)
-                      FilledButton.tonal(
-                        onPressed: session.takeoffSequenceRunning
-                            ? null
-                            : () => ref
-                                .read(flightSessionProvider.notifier)
-                                .startDescent(),
+                            .startDescent(),
                         child: const Text('开始下降'),
                       ),
                     if (showStableAfterDescent)

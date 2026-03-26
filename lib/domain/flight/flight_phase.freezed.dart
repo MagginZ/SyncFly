@@ -23,7 +23,6 @@ mixin _$FlightPhase {
     required TResult Function() taxiing,
     required TResult Function() takeoffAcceleration,
     required TResult Function() liftoffClimb,
-    required TResult Function() awaitingCruise,
     required TResult Function() cruising,
     required TResult Function() descent,
   }) => throw _privateConstructorUsedError;
@@ -33,7 +32,6 @@ mixin _$FlightPhase {
     TResult? Function()? taxiing,
     TResult? Function()? takeoffAcceleration,
     TResult? Function()? liftoffClimb,
-    TResult? Function()? awaitingCruise,
     TResult? Function()? cruising,
     TResult? Function()? descent,
   }) => throw _privateConstructorUsedError;
@@ -43,7 +41,6 @@ mixin _$FlightPhase {
     TResult Function()? taxiing,
     TResult Function()? takeoffAcceleration,
     TResult Function()? liftoffClimb,
-    TResult Function()? awaitingCruise,
     TResult Function()? cruising,
     TResult Function()? descent,
     required TResult orElse(),
@@ -54,7 +51,6 @@ mixin _$FlightPhase {
     required TResult Function(_Taxiing value) taxiing,
     required TResult Function(_TakeoffAcceleration value) takeoffAcceleration,
     required TResult Function(_LiftoffClimb value) liftoffClimb,
-    required TResult Function(_AwaitingCruise value) awaitingCruise,
     required TResult Function(_Cruising value) cruising,
     required TResult Function(_Descent value) descent,
   }) => throw _privateConstructorUsedError;
@@ -64,7 +60,6 @@ mixin _$FlightPhase {
     TResult? Function(_Taxiing value)? taxiing,
     TResult? Function(_TakeoffAcceleration value)? takeoffAcceleration,
     TResult? Function(_LiftoffClimb value)? liftoffClimb,
-    TResult? Function(_AwaitingCruise value)? awaitingCruise,
     TResult? Function(_Cruising value)? cruising,
     TResult? Function(_Descent value)? descent,
   }) => throw _privateConstructorUsedError;
@@ -74,7 +69,6 @@ mixin _$FlightPhase {
     TResult Function(_Taxiing value)? taxiing,
     TResult Function(_TakeoffAcceleration value)? takeoffAcceleration,
     TResult Function(_LiftoffClimb value)? liftoffClimb,
-    TResult Function(_AwaitingCruise value)? awaitingCruise,
     TResult Function(_Cruising value)? cruising,
     TResult Function(_Descent value)? descent,
     required TResult orElse(),
@@ -148,7 +142,6 @@ class _$IdleImpl implements _Idle {
     required TResult Function() taxiing,
     required TResult Function() takeoffAcceleration,
     required TResult Function() liftoffClimb,
-    required TResult Function() awaitingCruise,
     required TResult Function() cruising,
     required TResult Function() descent,
   }) {
@@ -162,7 +155,6 @@ class _$IdleImpl implements _Idle {
     TResult? Function()? taxiing,
     TResult? Function()? takeoffAcceleration,
     TResult? Function()? liftoffClimb,
-    TResult? Function()? awaitingCruise,
     TResult? Function()? cruising,
     TResult? Function()? descent,
   }) {
@@ -176,7 +168,6 @@ class _$IdleImpl implements _Idle {
     TResult Function()? taxiing,
     TResult Function()? takeoffAcceleration,
     TResult Function()? liftoffClimb,
-    TResult Function()? awaitingCruise,
     TResult Function()? cruising,
     TResult Function()? descent,
     required TResult orElse(),
@@ -194,7 +185,6 @@ class _$IdleImpl implements _Idle {
     required TResult Function(_Taxiing value) taxiing,
     required TResult Function(_TakeoffAcceleration value) takeoffAcceleration,
     required TResult Function(_LiftoffClimb value) liftoffClimb,
-    required TResult Function(_AwaitingCruise value) awaitingCruise,
     required TResult Function(_Cruising value) cruising,
     required TResult Function(_Descent value) descent,
   }) {
@@ -208,7 +198,6 @@ class _$IdleImpl implements _Idle {
     TResult? Function(_Taxiing value)? taxiing,
     TResult? Function(_TakeoffAcceleration value)? takeoffAcceleration,
     TResult? Function(_LiftoffClimb value)? liftoffClimb,
-    TResult? Function(_AwaitingCruise value)? awaitingCruise,
     TResult? Function(_Cruising value)? cruising,
     TResult? Function(_Descent value)? descent,
   }) {
@@ -222,7 +211,6 @@ class _$IdleImpl implements _Idle {
     TResult Function(_Taxiing value)? taxiing,
     TResult Function(_TakeoffAcceleration value)? takeoffAcceleration,
     TResult Function(_LiftoffClimb value)? liftoffClimb,
-    TResult Function(_AwaitingCruise value)? awaitingCruise,
     TResult Function(_Cruising value)? cruising,
     TResult Function(_Descent value)? descent,
     required TResult orElse(),
@@ -285,7 +273,6 @@ class _$TaxiingImpl implements _Taxiing {
     required TResult Function() taxiing,
     required TResult Function() takeoffAcceleration,
     required TResult Function() liftoffClimb,
-    required TResult Function() awaitingCruise,
     required TResult Function() cruising,
     required TResult Function() descent,
   }) {
@@ -299,7 +286,6 @@ class _$TaxiingImpl implements _Taxiing {
     TResult? Function()? taxiing,
     TResult? Function()? takeoffAcceleration,
     TResult? Function()? liftoffClimb,
-    TResult? Function()? awaitingCruise,
     TResult? Function()? cruising,
     TResult? Function()? descent,
   }) {
@@ -313,7 +299,6 @@ class _$TaxiingImpl implements _Taxiing {
     TResult Function()? taxiing,
     TResult Function()? takeoffAcceleration,
     TResult Function()? liftoffClimb,
-    TResult Function()? awaitingCruise,
     TResult Function()? cruising,
     TResult Function()? descent,
     required TResult orElse(),
@@ -331,7 +316,6 @@ class _$TaxiingImpl implements _Taxiing {
     required TResult Function(_Taxiing value) taxiing,
     required TResult Function(_TakeoffAcceleration value) takeoffAcceleration,
     required TResult Function(_LiftoffClimb value) liftoffClimb,
-    required TResult Function(_AwaitingCruise value) awaitingCruise,
     required TResult Function(_Cruising value) cruising,
     required TResult Function(_Descent value) descent,
   }) {
@@ -345,7 +329,6 @@ class _$TaxiingImpl implements _Taxiing {
     TResult? Function(_Taxiing value)? taxiing,
     TResult? Function(_TakeoffAcceleration value)? takeoffAcceleration,
     TResult? Function(_LiftoffClimb value)? liftoffClimb,
-    TResult? Function(_AwaitingCruise value)? awaitingCruise,
     TResult? Function(_Cruising value)? cruising,
     TResult? Function(_Descent value)? descent,
   }) {
@@ -359,7 +342,6 @@ class _$TaxiingImpl implements _Taxiing {
     TResult Function(_Taxiing value)? taxiing,
     TResult Function(_TakeoffAcceleration value)? takeoffAcceleration,
     TResult Function(_LiftoffClimb value)? liftoffClimb,
-    TResult Function(_AwaitingCruise value)? awaitingCruise,
     TResult Function(_Cruising value)? cruising,
     TResult Function(_Descent value)? descent,
     required TResult orElse(),
@@ -423,7 +405,6 @@ class _$TakeoffAccelerationImpl implements _TakeoffAcceleration {
     required TResult Function() taxiing,
     required TResult Function() takeoffAcceleration,
     required TResult Function() liftoffClimb,
-    required TResult Function() awaitingCruise,
     required TResult Function() cruising,
     required TResult Function() descent,
   }) {
@@ -437,7 +418,6 @@ class _$TakeoffAccelerationImpl implements _TakeoffAcceleration {
     TResult? Function()? taxiing,
     TResult? Function()? takeoffAcceleration,
     TResult? Function()? liftoffClimb,
-    TResult? Function()? awaitingCruise,
     TResult? Function()? cruising,
     TResult? Function()? descent,
   }) {
@@ -451,7 +431,6 @@ class _$TakeoffAccelerationImpl implements _TakeoffAcceleration {
     TResult Function()? taxiing,
     TResult Function()? takeoffAcceleration,
     TResult Function()? liftoffClimb,
-    TResult Function()? awaitingCruise,
     TResult Function()? cruising,
     TResult Function()? descent,
     required TResult orElse(),
@@ -469,7 +448,6 @@ class _$TakeoffAccelerationImpl implements _TakeoffAcceleration {
     required TResult Function(_Taxiing value) taxiing,
     required TResult Function(_TakeoffAcceleration value) takeoffAcceleration,
     required TResult Function(_LiftoffClimb value) liftoffClimb,
-    required TResult Function(_AwaitingCruise value) awaitingCruise,
     required TResult Function(_Cruising value) cruising,
     required TResult Function(_Descent value) descent,
   }) {
@@ -483,7 +461,6 @@ class _$TakeoffAccelerationImpl implements _TakeoffAcceleration {
     TResult? Function(_Taxiing value)? taxiing,
     TResult? Function(_TakeoffAcceleration value)? takeoffAcceleration,
     TResult? Function(_LiftoffClimb value)? liftoffClimb,
-    TResult? Function(_AwaitingCruise value)? awaitingCruise,
     TResult? Function(_Cruising value)? cruising,
     TResult? Function(_Descent value)? descent,
   }) {
@@ -497,7 +474,6 @@ class _$TakeoffAccelerationImpl implements _TakeoffAcceleration {
     TResult Function(_Taxiing value)? taxiing,
     TResult Function(_TakeoffAcceleration value)? takeoffAcceleration,
     TResult Function(_LiftoffClimb value)? liftoffClimb,
-    TResult Function(_AwaitingCruise value)? awaitingCruise,
     TResult Function(_Cruising value)? cruising,
     TResult Function(_Descent value)? descent,
     required TResult orElse(),
@@ -560,7 +536,6 @@ class _$LiftoffClimbImpl implements _LiftoffClimb {
     required TResult Function() taxiing,
     required TResult Function() takeoffAcceleration,
     required TResult Function() liftoffClimb,
-    required TResult Function() awaitingCruise,
     required TResult Function() cruising,
     required TResult Function() descent,
   }) {
@@ -574,7 +549,6 @@ class _$LiftoffClimbImpl implements _LiftoffClimb {
     TResult? Function()? taxiing,
     TResult? Function()? takeoffAcceleration,
     TResult? Function()? liftoffClimb,
-    TResult? Function()? awaitingCruise,
     TResult? Function()? cruising,
     TResult? Function()? descent,
   }) {
@@ -588,7 +562,6 @@ class _$LiftoffClimbImpl implements _LiftoffClimb {
     TResult Function()? taxiing,
     TResult Function()? takeoffAcceleration,
     TResult Function()? liftoffClimb,
-    TResult Function()? awaitingCruise,
     TResult Function()? cruising,
     TResult Function()? descent,
     required TResult orElse(),
@@ -606,7 +579,6 @@ class _$LiftoffClimbImpl implements _LiftoffClimb {
     required TResult Function(_Taxiing value) taxiing,
     required TResult Function(_TakeoffAcceleration value) takeoffAcceleration,
     required TResult Function(_LiftoffClimb value) liftoffClimb,
-    required TResult Function(_AwaitingCruise value) awaitingCruise,
     required TResult Function(_Cruising value) cruising,
     required TResult Function(_Descent value) descent,
   }) {
@@ -620,7 +592,6 @@ class _$LiftoffClimbImpl implements _LiftoffClimb {
     TResult? Function(_Taxiing value)? taxiing,
     TResult? Function(_TakeoffAcceleration value)? takeoffAcceleration,
     TResult? Function(_LiftoffClimb value)? liftoffClimb,
-    TResult? Function(_AwaitingCruise value)? awaitingCruise,
     TResult? Function(_Cruising value)? cruising,
     TResult? Function(_Descent value)? descent,
   }) {
@@ -634,7 +605,6 @@ class _$LiftoffClimbImpl implements _LiftoffClimb {
     TResult Function(_Taxiing value)? taxiing,
     TResult Function(_TakeoffAcceleration value)? takeoffAcceleration,
     TResult Function(_LiftoffClimb value)? liftoffClimb,
-    TResult Function(_AwaitingCruise value)? awaitingCruise,
     TResult Function(_Cruising value)? cruising,
     TResult Function(_Descent value)? descent,
     required TResult orElse(),
@@ -648,143 +618,6 @@ class _$LiftoffClimbImpl implements _LiftoffClimb {
 
 abstract class _LiftoffClimb implements FlightPhase {
   const factory _LiftoffClimb() = _$LiftoffClimbImpl;
-}
-
-/// @nodoc
-abstract class _$$AwaitingCruiseImplCopyWith<$Res> {
-  factory _$$AwaitingCruiseImplCopyWith(
-    _$AwaitingCruiseImpl value,
-    $Res Function(_$AwaitingCruiseImpl) then,
-  ) = __$$AwaitingCruiseImplCopyWithImpl<$Res>;
-}
-
-/// @nodoc
-class __$$AwaitingCruiseImplCopyWithImpl<$Res>
-    extends _$FlightPhaseCopyWithImpl<$Res, _$AwaitingCruiseImpl>
-    implements _$$AwaitingCruiseImplCopyWith<$Res> {
-  __$$AwaitingCruiseImplCopyWithImpl(
-    _$AwaitingCruiseImpl _value,
-    $Res Function(_$AwaitingCruiseImpl) _then,
-  ) : super(_value, _then);
-
-  /// Create a copy of FlightPhase
-  /// with the given fields replaced by the non-null parameter values.
-}
-
-/// @nodoc
-
-class _$AwaitingCruiseImpl implements _AwaitingCruise {
-  const _$AwaitingCruiseImpl();
-
-  @override
-  String toString() {
-    return 'FlightPhase.awaitingCruise()';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is _$AwaitingCruiseImpl);
-  }
-
-  @override
-  int get hashCode => runtimeType.hashCode;
-
-  @override
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function() idle,
-    required TResult Function() taxiing,
-    required TResult Function() takeoffAcceleration,
-    required TResult Function() liftoffClimb,
-    required TResult Function() awaitingCruise,
-    required TResult Function() cruising,
-    required TResult Function() descent,
-  }) {
-    return awaitingCruise();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function()? idle,
-    TResult? Function()? taxiing,
-    TResult? Function()? takeoffAcceleration,
-    TResult? Function()? liftoffClimb,
-    TResult? Function()? awaitingCruise,
-    TResult? Function()? cruising,
-    TResult? Function()? descent,
-  }) {
-    return awaitingCruise?.call();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function()? idle,
-    TResult Function()? taxiing,
-    TResult Function()? takeoffAcceleration,
-    TResult Function()? liftoffClimb,
-    TResult Function()? awaitingCruise,
-    TResult Function()? cruising,
-    TResult Function()? descent,
-    required TResult orElse(),
-  }) {
-    if (awaitingCruise != null) {
-      return awaitingCruise();
-    }
-    return orElse();
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(_Idle value) idle,
-    required TResult Function(_Taxiing value) taxiing,
-    required TResult Function(_TakeoffAcceleration value) takeoffAcceleration,
-    required TResult Function(_LiftoffClimb value) liftoffClimb,
-    required TResult Function(_AwaitingCruise value) awaitingCruise,
-    required TResult Function(_Cruising value) cruising,
-    required TResult Function(_Descent value) descent,
-  }) {
-    return awaitingCruise(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(_Idle value)? idle,
-    TResult? Function(_Taxiing value)? taxiing,
-    TResult? Function(_TakeoffAcceleration value)? takeoffAcceleration,
-    TResult? Function(_LiftoffClimb value)? liftoffClimb,
-    TResult? Function(_AwaitingCruise value)? awaitingCruise,
-    TResult? Function(_Cruising value)? cruising,
-    TResult? Function(_Descent value)? descent,
-  }) {
-    return awaitingCruise?.call(this);
-  }
-
-  @override
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(_Idle value)? idle,
-    TResult Function(_Taxiing value)? taxiing,
-    TResult Function(_TakeoffAcceleration value)? takeoffAcceleration,
-    TResult Function(_LiftoffClimb value)? liftoffClimb,
-    TResult Function(_AwaitingCruise value)? awaitingCruise,
-    TResult Function(_Cruising value)? cruising,
-    TResult Function(_Descent value)? descent,
-    required TResult orElse(),
-  }) {
-    if (awaitingCruise != null) {
-      return awaitingCruise(this);
-    }
-    return orElse();
-  }
-}
-
-abstract class _AwaitingCruise implements FlightPhase {
-  const factory _AwaitingCruise() = _$AwaitingCruiseImpl;
 }
 
 /// @nodoc
@@ -834,7 +667,6 @@ class _$CruisingImpl implements _Cruising {
     required TResult Function() taxiing,
     required TResult Function() takeoffAcceleration,
     required TResult Function() liftoffClimb,
-    required TResult Function() awaitingCruise,
     required TResult Function() cruising,
     required TResult Function() descent,
   }) {
@@ -848,7 +680,6 @@ class _$CruisingImpl implements _Cruising {
     TResult? Function()? taxiing,
     TResult? Function()? takeoffAcceleration,
     TResult? Function()? liftoffClimb,
-    TResult? Function()? awaitingCruise,
     TResult? Function()? cruising,
     TResult? Function()? descent,
   }) {
@@ -862,7 +693,6 @@ class _$CruisingImpl implements _Cruising {
     TResult Function()? taxiing,
     TResult Function()? takeoffAcceleration,
     TResult Function()? liftoffClimb,
-    TResult Function()? awaitingCruise,
     TResult Function()? cruising,
     TResult Function()? descent,
     required TResult orElse(),
@@ -880,7 +710,6 @@ class _$CruisingImpl implements _Cruising {
     required TResult Function(_Taxiing value) taxiing,
     required TResult Function(_TakeoffAcceleration value) takeoffAcceleration,
     required TResult Function(_LiftoffClimb value) liftoffClimb,
-    required TResult Function(_AwaitingCruise value) awaitingCruise,
     required TResult Function(_Cruising value) cruising,
     required TResult Function(_Descent value) descent,
   }) {
@@ -894,7 +723,6 @@ class _$CruisingImpl implements _Cruising {
     TResult? Function(_Taxiing value)? taxiing,
     TResult? Function(_TakeoffAcceleration value)? takeoffAcceleration,
     TResult? Function(_LiftoffClimb value)? liftoffClimb,
-    TResult? Function(_AwaitingCruise value)? awaitingCruise,
     TResult? Function(_Cruising value)? cruising,
     TResult? Function(_Descent value)? descent,
   }) {
@@ -908,7 +736,6 @@ class _$CruisingImpl implements _Cruising {
     TResult Function(_Taxiing value)? taxiing,
     TResult Function(_TakeoffAcceleration value)? takeoffAcceleration,
     TResult Function(_LiftoffClimb value)? liftoffClimb,
-    TResult Function(_AwaitingCruise value)? awaitingCruise,
     TResult Function(_Cruising value)? cruising,
     TResult Function(_Descent value)? descent,
     required TResult orElse(),
@@ -971,7 +798,6 @@ class _$DescentImpl implements _Descent {
     required TResult Function() taxiing,
     required TResult Function() takeoffAcceleration,
     required TResult Function() liftoffClimb,
-    required TResult Function() awaitingCruise,
     required TResult Function() cruising,
     required TResult Function() descent,
   }) {
@@ -985,7 +811,6 @@ class _$DescentImpl implements _Descent {
     TResult? Function()? taxiing,
     TResult? Function()? takeoffAcceleration,
     TResult? Function()? liftoffClimb,
-    TResult? Function()? awaitingCruise,
     TResult? Function()? cruising,
     TResult? Function()? descent,
   }) {
@@ -999,7 +824,6 @@ class _$DescentImpl implements _Descent {
     TResult Function()? taxiing,
     TResult Function()? takeoffAcceleration,
     TResult Function()? liftoffClimb,
-    TResult Function()? awaitingCruise,
     TResult Function()? cruising,
     TResult Function()? descent,
     required TResult orElse(),
@@ -1017,7 +841,6 @@ class _$DescentImpl implements _Descent {
     required TResult Function(_Taxiing value) taxiing,
     required TResult Function(_TakeoffAcceleration value) takeoffAcceleration,
     required TResult Function(_LiftoffClimb value) liftoffClimb,
-    required TResult Function(_AwaitingCruise value) awaitingCruise,
     required TResult Function(_Cruising value) cruising,
     required TResult Function(_Descent value) descent,
   }) {
@@ -1031,7 +854,6 @@ class _$DescentImpl implements _Descent {
     TResult? Function(_Taxiing value)? taxiing,
     TResult? Function(_TakeoffAcceleration value)? takeoffAcceleration,
     TResult? Function(_LiftoffClimb value)? liftoffClimb,
-    TResult? Function(_AwaitingCruise value)? awaitingCruise,
     TResult? Function(_Cruising value)? cruising,
     TResult? Function(_Descent value)? descent,
   }) {
@@ -1045,7 +867,6 @@ class _$DescentImpl implements _Descent {
     TResult Function(_Taxiing value)? taxiing,
     TResult Function(_TakeoffAcceleration value)? takeoffAcceleration,
     TResult Function(_LiftoffClimb value)? liftoffClimb,
-    TResult Function(_AwaitingCruise value)? awaitingCruise,
     TResult Function(_Cruising value)? cruising,
     TResult Function(_Descent value)? descent,
     required TResult orElse(),
