@@ -28,7 +28,7 @@ class HapticScheduler {
 
   Future<void> _tick() async {
     final r = _ref;
-    if (r == null || !r.context.mounted) return;
+    if (r == null) return;
 
     final tuning = r.read(flightSessionProvider).tuning;
     final elapsed = DateTime.now().millisecondsSinceEpoch / 1000.0;

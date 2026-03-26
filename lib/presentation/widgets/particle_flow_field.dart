@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/flight_session_controller.dart';
@@ -15,58 +16,61 @@ class ParticleFlowField extends ConsumerStatefulWidget {
 
 class _ParticleFlowFieldState extends ConsumerState<ParticleFlowField>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+  late final Ticker _ticker;
+  double _flowTimeSec = 0;
   late final HapticScheduler _haptics;
-  var _hapticStarted = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(hours: 1),
-    )..repeat();
     _haptics = HapticScheduler(MethodChannelHapticPlatform());
+    _ticker = createTicker(_onTick)..start();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_hapticStarted) return;
-    _hapticStarted = true;
-    final mul = ref.read(sessionSettingsProvider).hapticIntensity;
-    _haptics.start(ref, intensityMul: mul);
+  void _onTick(Duration elapsed) {
+    final dt = elapsed.inMicroseconds / Duration.microsecondsPerSecond;
+    if (dt <= 0) return;
+    _flowTimeSec += dt;
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _ticker.dispose();
     _haptics.stop();
-    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(
+      flightSessionProvider.select((s) => s.hapticSessionActive),
+      (prev, active) {
+        if (active) {
+          final mul = ref.read(sessionSettingsProvider).hapticIntensity;
+          _haptics.start(ref, intensityMul: mul);
+        } else {
+          _haptics.stop();
+        }
+      },
+    );
+
     ref.listen(sessionSettingsProvider, (_, next) {
-      _haptics.updateIntensity(next.hapticIntensity);
+      if (ref.read(flightSessionProvider).hapticSessionActive) {
+        _haptics.updateIntensity(next.hapticIntensity);
+      }
     });
 
     final session = ref.watch(flightSessionProvider);
 
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return RepaintBoundary(
-          child: CustomPaint(
-            painter: VestibularFlowPainter(
-              time: _controller.value * 400,
-              tuning: session.tuning,
-            ),
-            child: child,
-          ),
-        );
-      },
-      child: const SizedBox.expand(),
+    return RepaintBoundary(
+      child: CustomPaint(
+        painter: VestibularFlowPainter(
+          time: _flowTimeSec,
+          tuning: session.tuning,
+        ),
+        child: const SizedBox.expand(),
+      ),
     );
   }
 }

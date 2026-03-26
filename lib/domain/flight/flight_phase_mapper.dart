@@ -5,12 +5,12 @@ import 'flight_visual_tuning.dart';
 FlightVisualTuning tuningForPhase(FlightPhase phase, SessionSettings s) {
   final rate = s.animationRate;
   return phase.when(
-    idle: () => const FlightVisualTuning(
+    idle: () => FlightVisualTuning(
       flowDirectionX: 0,
       flowDirectionY: 0.15,
-      flowSpeed: 0.15,
+      flowSpeed: 0.15 * rate,
       breathAmplitude: 0.06,
-      breathHz: 0.2,
+      breathHz: 0.2 * rate,
       particleJitter: 0.02,
       guidanceText: '放松肩背，跟随屏幕缓慢呼吸',
       guidanceVisible: true,

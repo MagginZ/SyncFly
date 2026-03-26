@@ -24,6 +24,7 @@ class FlightSessionState {
     required this.blendT,
     required this.tuning,
     required this.demoRunning,
+    required this.hapticSessionActive,
   });
 
   final FlightPhase phase;
@@ -31,17 +32,22 @@ class FlightSessionState {
   final FlightVisualTuning tuning;
   final bool demoRunning;
 
+  /// 用户点击「开始起飞」后为 true；演示中止会关闭；用户确认「已平稳」后关闭。
+  final bool hapticSessionActive;
+
   FlightSessionState copyWith({
     FlightPhase? phase,
     double? blendT,
     FlightVisualTuning? tuning,
     bool? demoRunning,
+    bool? hapticSessionActive,
   }) {
     return FlightSessionState(
       phase: phase ?? this.phase,
       blendT: blendT ?? this.blendT,
       tuning: tuning ?? this.tuning,
       demoRunning: demoRunning ?? this.demoRunning,
+      hapticSessionActive: hapticSessionActive ?? this.hapticSessionActive,
     );
   }
 }
@@ -57,6 +63,7 @@ class FlightSessionNotifier extends StateNotifier<FlightSessionState> {
               const SessionSettings(),
             ),
             demoRunning: false,
+            hapticSessionActive: false,
           ),
         );
 
@@ -97,11 +104,27 @@ class FlightSessionNotifier extends StateNotifier<FlightSessionState> {
     return completer.future;
   }
 
+  /// 滑块等变更 [SessionSettings] 后调用，使流速/呼吸等即时反映到当前阶段。
+  /// 若正在阶段过渡混合 [_blendTimer]，则不打断，避免 [_blendTo] 的 Future 悬挂。
+  void refreshTuningFromSettings() {
+    if (_blendTimer != null) return;
+    final settings = _ref.read(sessionSettingsProvider);
+    final next = tuningForPhase(state.phase, settings);
+    state = state.copyWith(tuning: next, blendT: 1);
+  }
+
   Future<void> setPhase(FlightPhase next) async {
     final settings = _ref.read(sessionSettingsProvider);
     final target = tuningForPhase(next, settings);
     state = state.copyWith(phase: next, blendT: 0);
     await _blendTo(target, settings);
+    // 混合期间若用户调整了滑块，在此补一次同步（不影响仅调用 [_blendTo] 的预览）。
+    refreshTuningFromSettings();
+  }
+
+  /// 用户感知已平稳后主动关闭触觉（不影响当前飞行阶段与画面）。
+  void confirmStopHaptics() {
+    state = state.copyWith(hapticSessionActive: false);
   }
 
   Future<void> runTakeoffDemo() async {
@@ -109,7 +132,7 @@ class FlightSessionNotifier extends StateNotifier<FlightSessionState> {
     final settings = _ref.read(sessionSettingsProvider);
     final third = (settings.takeoffSequenceSeconds / 3).ceil().clamp(3, 120);
 
-    state = state.copyWith(demoRunning: true);
+    state = state.copyWith(demoRunning: true, hapticSessionActive: true);
 
     Future<void> abortIfStale() async {
       if (gen != _demoGen) throw _DemoCancelled();
@@ -150,7 +173,7 @@ class FlightSessionNotifier extends StateNotifier<FlightSessionState> {
 
   void stopDemo() {
     _demoGen++;
-    state = state.copyWith(demoRunning: false);
+    state = state.copyWith(demoRunning: false, hapticSessionActive: false);
   }
 
   /// 降落阶段示例：视觉上改为「向上」流动以利前庭耦合（可自行接入真实阶段切换）。

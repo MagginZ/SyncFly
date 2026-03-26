@@ -32,7 +32,7 @@ class _CalmFlightScreenState extends ConsumerState<CalmFlightScreen> {
       await _audio.tryPrepareLoop('audio/white_noise.mp3');
       final vol = ref.read(sessionSettingsProvider).masterVolume;
       await _audio.setVolume(vol);
-      if (_audio.isPrepared && mounted) await _audio.resume();
+      if (_audio.isPrepared && mounted) await _audio.pause();
     });
   }
 
@@ -49,6 +49,18 @@ class _CalmFlightScreenState extends ConsumerState<CalmFlightScreen> {
 
     ref.listen(sessionSettingsProvider, (_, next) {
       _audio.setVolume(next.masterVolume);
+      ref.read(flightSessionProvider.notifier).refreshTuningFromSettings();
+    });
+
+    ref.listen(flightSessionProvider.select((s) => s.hapticSessionActive),
+        (prev, active) async {
+      if (active) {
+        final vol = ref.read(sessionSettingsProvider).masterVolume;
+        await _audio.setVolume(vol);
+        if (_audio.isPrepared && mounted) await _audio.resume();
+      } else if (mounted) {
+        await _audio.pause();
+      }
     });
 
     return Scaffold(
@@ -103,7 +115,7 @@ class _CalmFlightScreenState extends ConsumerState<CalmFlightScreen> {
                                 : () => ref
                                     .read(flightSessionProvider.notifier)
                                     .runTakeoffDemo(),
-                            child: Text(session.demoRunning ? '演示进行中…' : '起飞流程演示'),
+                            child: Text(session.demoRunning ? '起降进行中…' : '开始起飞'),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -123,7 +135,14 @@ class _CalmFlightScreenState extends ConsumerState<CalmFlightScreen> {
                         onPressed: () => ref
                             .read(flightSessionProvider.notifier)
                             .stopDemo(),
-                        child: const Text('停止演示'),
+                        child: const Text('停止起降流程'),
+                      ),
+                    if (session.hapticSessionActive)
+                      FilledButton.tonal(
+                        onPressed: () => ref
+                            .read(flightSessionProvider.notifier)
+                            .confirmStopHaptics(),
+                        child: const Text('已平稳，关闭触觉'),
                       ),
                   ],
                 ),

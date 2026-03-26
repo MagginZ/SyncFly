@@ -10,6 +10,6 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.textContaining('起飞流程演示'), findsOneWidget);
+    expect(find.textContaining('开始起飞'), findsOneWidget);
   });
 }
