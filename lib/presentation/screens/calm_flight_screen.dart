@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -84,7 +85,9 @@ class _CalmFlightScreenState extends ConsumerState<CalmFlightScreen> {
         (prev, active) async {
       if (active) {
         await _audio.setVolume(ref.read(sessionSettingsProvider).masterVolume);
-        if (_audio.isPrepared && mounted) {
+        if (_audio.isPrepared &&
+            mounted &&
+            (!kIsWeb || _audio.isWebAudioUnlocked)) {
           await _audio.resume();
           _startAudioBreathModulation();
         }
@@ -127,9 +130,28 @@ class _CalmFlightScreenState extends ConsumerState<CalmFlightScreen> {
         true;
 
     return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
+      body: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (_) {
+          if (!kIsWeb) return;
+          unawaited(
+            _audio.unlockWebAudioAfterUserGesture().then((_) async {
+              if (!mounted) return;
+              final active = ref.read(flightSessionProvider).hapticSessionActive;
+              if (!active) return;
+              await _audio.setVolume(
+                ref.read(sessionSettingsProvider).masterVolume,
+              );
+              if (_audio.isPrepared && _audio.isWebAudioUnlocked) {
+                await _audio.resume();
+                _startAudioBreathModulation();
+              }
+            }),
+          );
+        },
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
           const ParticleFlowField(),
           Align(
             alignment: Alignment.topCenter,
@@ -175,6 +197,9 @@ class _CalmFlightScreenState extends ConsumerState<CalmFlightScreen> {
                           Expanded(
                             child: FilledButton(
                               onPressed: () async {
+                                if (kIsWeb) {
+                                  await _audio.unlockWebAudioAfterUserGesture();
+                                }
                                 final n = ref.read(
                                   flightSessionProvider.notifier,
                                 );
@@ -220,9 +245,14 @@ class _CalmFlightScreenState extends ConsumerState<CalmFlightScreen> {
                       ),
                     if (showStartDescent && !session.descentRunning)
                       FilledButton.tonal(
-                        onPressed: () => ref
-                            .read(flightSessionProvider.notifier)
-                            .startDescent(),
+                        onPressed: () async {
+                          if (kIsWeb) {
+                            await _audio.unlockWebAudioAfterUserGesture();
+                          }
+                          await ref
+                              .read(flightSessionProvider.notifier)
+                              .startDescent();
+                        },
                         child: const Text('开始下降'),
                       ),
                     if (showStableAfterDescent)
@@ -237,7 +267,8 @@ class _CalmFlightScreenState extends ConsumerState<CalmFlightScreen> {
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
