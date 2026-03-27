@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,10 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/flight_session_controller.dart';
 import '../../core/breath/breath_envelope.dart';
 import '../../domain/flight/breath_pattern_kind.dart';
-import '../../domain/flight/flight_phase.dart';
 import '../../services/haptics/haptic_scheduler.dart';
 import '../../services/haptics/platform/haptic_platform.dart';
 import '../painters/kinetic_monolith_painter.dart';
+import 'particle_phase_kinematics.dart';
 
 /// 全屏「Kinetic Monolith」式粒子场：中心径向、4-7-8 呼吸扩张、阶段驱动的垂直漂移与起飞拖尾。
 class ParticleFlowField extends ConsumerStatefulWidget {
@@ -36,7 +37,9 @@ class _ParticleFlowFieldState extends ConsumerState<ParticleFlowField>
   @override
   void initState() {
     super.initState();
-    _haptics = HapticScheduler(MethodChannelHapticPlatform());
+    _haptics = HapticScheduler(
+      kIsWeb ? const NoOpHapticPlatform() : MethodChannelHapticPlatform(),
+    );
     _ticker = createTicker(_onTick)..start();
   }
 
@@ -97,8 +100,9 @@ class _ParticleFlowFieldState extends ConsumerState<ParticleFlowField>
       _initParticles(size);
     }
 
-    var fx = tuning.flowDirectionX;
-    var fy = tuning.flowDirectionY;
+    final kin = particleKinematicsForPhase(session.phase);
+    var fx = kin.fx;
+    var fy = kin.fy;
     final dirLen = math.sqrt(fx * fx + fy * fy);
     if (dirLen > 1e-6) {
       fx /= dirLen;
@@ -108,10 +112,10 @@ class _ParticleFlowFieldState extends ConsumerState<ParticleFlowField>
       fy = 0;
     }
 
-    /// 漂移强度（像素）：与 [FlightVisualTuning.flowSpeed]、用户动画速率一致。
-    final driftScale = 44.0 * rate;
-    final targetDx = fx * tuning.flowSpeed * driftScale;
-    final targetDy = fy * tuning.flowSpeed * driftScale;
+    /// 漂移（像素）：阶段强度 × 用户动画速率（与滑块联动）。
+    final driftScale = 52.0 * rate * kin.driftStrength;
+    final targetDx = fx * driftScale;
+    final targetDy = fy * driftScale;
     final smoothK = 1 - math.exp(-dt * 9);
     _smoothedDx += (targetDx - _smoothedDx) * smoothK;
     _smoothedDy += (targetDy - _smoothedDy) * smoothK;
@@ -119,17 +123,14 @@ class _ParticleFlowFieldState extends ConsumerState<ParticleFlowField>
     final hold = tuning.breathPattern == BreathPatternKind.fourSevenEight &&
         breathIsHold478(_flowTimeSec);
 
-    /// 滑行：视觉后移，轨道角速度与默认方向相反；其余阶段按调参方向运动。
-    final orbitSign = _orbitRotationSign(session.phase);
-
-    /// 轨道角速度：屏息时减半；基础频率 = flowSpeed × 动画速率，并用 breathHz 做轻微呼吸脉动。
+    /// 轨道角速度：屏息时减半；阶段相对频率 × 动画速率 × breathHz 脉动。
     final breathOrbitPulse =
         1.0 + 0.22 * math.sin(2 * math.pi * tuning.breathHz * _flowTimeSec);
     final orbitMul = (hold ? 0.5 : 1.0) *
         rate *
         60.0 *
         dt *
-        tuning.flowSpeed *
+        kin.orbitFrequencyMul *
         breathOrbitPulse.clamp(0.82, 1.18);
 
     final cx = size.width / 2;
@@ -138,7 +139,7 @@ class _ParticleFlowFieldState extends ConsumerState<ParticleFlowField>
     final follow = 1 - math.exp(-dt * 3.1);
 
     for (final p in _particles) {
-      p.angle += orbitSign * p.speed * orbitMul;
+      p.angle += p.speed * orbitMul;
       final expansion = breathScale * p.distance;
       final w = 2 + p.radius * 0.35;
       final targetX = cx + math.cos(p.angle) * expansion + _smoothedDx * w;
@@ -146,14 +147,6 @@ class _ParticleFlowFieldState extends ConsumerState<ParticleFlowField>
       p.x += (targetX - p.x) * follow;
       p.y += (targetY - p.y) * follow;
     }
-  }
-
-  /// 仅滑行阶段反转径向粒子的切向旋转，强化「视野后移」与默认环流相反。
-  int _orbitRotationSign(FlightPhase phase) {
-    return phase.maybeMap(
-      taxiing: (_) => -1,
-      orElse: () => 1,
-    );
   }
 
   @override
@@ -184,6 +177,14 @@ class _ParticleFlowFieldState extends ConsumerState<ParticleFlowField>
     });
 
     final session = ref.watch(flightSessionProvider);
+    ref.watch(sessionSettingsProvider.select((s) => s.animationRate));
+
+    final mag = math.sqrt(
+      _smoothedDx * _smoothedDx + _smoothedDy * _smoothedDy,
+    );
+    final strokeDirX = mag > 1e-6 ? _smoothedDx / mag : 0.0;
+    final strokeDirY = mag > 1e-6 ? _smoothedDy / mag : 0.0;
+    final flowMagPaint = (mag / 48.0).clamp(0.0, 1.5);
 
     return RepaintBoundary(
       child: CustomPaint(
@@ -191,6 +192,9 @@ class _ParticleFlowFieldState extends ConsumerState<ParticleFlowField>
           particles: _particles,
           timeSec: _flowTimeSec,
           tuning: session.tuning,
+          strokeDirX: strokeDirX,
+          strokeDirY: strokeDirY,
+          flowMagPaint: flowMagPaint,
         ),
         child: const SizedBox.expand(),
       ),

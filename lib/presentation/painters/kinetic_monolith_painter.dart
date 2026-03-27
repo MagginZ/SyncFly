@@ -37,11 +37,21 @@ class KineticMonolithPainter extends CustomPainter {
     required this.particles,
     required this.timeSec,
     required this.tuning,
+    required this.strokeDirX,
+    required this.strokeDirY,
+    required this.flowMagPaint,
   });
 
   final List<MonolithParticle> particles;
   final double timeSec;
   final FlightVisualTuning tuning;
+
+  /// 与粒子漂移一致的归一化方向（用于尾迹）。
+  final double strokeDirX;
+  final double strokeDirY;
+
+  /// 与速率、阶段联动的尾迹/粒子缩放强度 [0,1.5]。
+  final double flowMagPaint;
 
   static const Color _primary = Color(0xFF9FFF88);
   static const Color _secondary = Color(0xFF8FF9A4);
@@ -80,17 +90,9 @@ class KineticMonolithPainter extends CustomPainter {
         ? 0.6
         : 1.0;
 
-    var fx = tuning.flowDirectionX;
-    var fy = tuning.flowDirectionY;
-    final dirLen = math.sqrt(fx * fx + fy * fy);
-    if (dirLen > 1e-6) {
-      fx /= dirLen;
-      fy /= dirLen;
-    } else {
-      fx = 0;
-      fy = 0;
-    }
-    final flowMag = tuning.flowSpeed.clamp(0.0, 1.5);
+    final fx = strokeDirX;
+    final fy = strokeDirY;
+    final flowMag = flowMagPaint.clamp(0.0, 1.5);
 
     for (final p in particles) {
       final color = p.colorMint ? _primary : _secondary;
@@ -136,6 +138,10 @@ class KineticMonolithPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant KineticMonolithPainter oldDelegate) {
-    return oldDelegate.timeSec != timeSec || oldDelegate.tuning != tuning;
+    return oldDelegate.timeSec != timeSec ||
+        oldDelegate.tuning != tuning ||
+        oldDelegate.strokeDirX != strokeDirX ||
+        oldDelegate.strokeDirY != strokeDirY ||
+        oldDelegate.flowMagPaint != flowMagPaint;
   }
 }
