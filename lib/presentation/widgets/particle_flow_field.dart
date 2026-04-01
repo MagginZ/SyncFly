@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -8,8 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../application/flight_session_controller.dart';
 import '../../core/breath/breath_envelope.dart';
 import '../../domain/flight/breath_pattern_kind.dart';
-import '../../services/haptics/haptic_scheduler.dart';
-import '../../services/haptics/platform/haptic_platform.dart';
+import '../../services/haptics/vibration_flight_haptics.dart';
 import '../painters/kinetic_monolith_painter.dart';
 import 'particle_phase_kinematics.dart';
 
@@ -32,15 +32,39 @@ class _ParticleFlowFieldState extends ConsumerState<ParticleFlowField>
   double _smoothedDx = 0;
   double _smoothedDy = 0;
 
-  late final HapticScheduler _haptics;
-
   @override
   void initState() {
     super.initState();
-    _haptics = HapticScheduler(
-      kIsWeb ? const NoOpHapticPlatform() : MethodChannelHapticPlatform(),
-    );
     _ticker = createTicker(_onTick)..start();
+  }
+
+  Future<void> _onFlightSessionVibration(
+    FlightSessionState? prev,
+    FlightSessionState next,
+  ) async {
+    if (kIsWeb) return;
+    if (!next.hapticSessionActive) {
+      await VibrationFlightHaptics.stop();
+      return;
+    }
+    final mul = ref.read(sessionSettingsProvider).hapticIntensity;
+    if (mul < 0.05) {
+      await VibrationFlightHaptics.stop();
+      return;
+    }
+    final prevPhase = prev?.phase;
+    final nextPhase = next.phase;
+    if (prevPhase != null && prevPhase != nextPhase) {
+      if (VibrationFlightHaptics.isTakeoffToLiftoff(prevPhase, nextPhase)) {
+        await VibrationFlightHaptics.playRotationPulse(mul);
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+      }
+      if (VibrationFlightHaptics.isDescentToIdle(prevPhase, nextPhase)) {
+        await VibrationFlightHaptics.playTouchdownPulse(mul);
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+      }
+    }
+    await VibrationFlightHaptics.applySustainedPhasePattern(nextPhase, mul);
   }
 
   void _onTick(Duration elapsed) {
@@ -152,29 +176,31 @@ class _ParticleFlowFieldState extends ConsumerState<ParticleFlowField>
   @override
   void dispose() {
     _ticker.dispose();
-    _haptics.stop();
+    unawaited(VibrationFlightHaptics.stop());
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(flightSessionProvider, (prev, next) {
+      unawaited(_onFlightSessionVibration(prev, next));
+    });
+
     ref.listen(
-      flightSessionProvider.select((s) => s.hapticSessionActive),
-      (prev, active) {
-        if (active) {
-          final mul = ref.read(sessionSettingsProvider).hapticIntensity;
-          _haptics.start(ref, intensityMul: mul);
-        } else {
-          _haptics.stop();
+      sessionSettingsProvider.select((s) => s.hapticIntensity),
+      (prev, next) {
+        if (!ref.read(flightSessionProvider).hapticSessionActive) return;
+        if (kIsWeb) return;
+        if (next < 0.05) {
+          unawaited(VibrationFlightHaptics.stop());
+          return;
         }
+        final phase = ref.read(flightSessionProvider).phase;
+        unawaited(
+          VibrationFlightHaptics.applySustainedPhasePattern(phase, next),
+        );
       },
     );
-
-    ref.listen(sessionSettingsProvider, (_, next) {
-      if (ref.read(flightSessionProvider).hapticSessionActive) {
-        _haptics.updateIntensity(next.hapticIntensity);
-      }
-    });
 
     final session = ref.watch(flightSessionProvider);
     ref.watch(sessionSettingsProvider.select((s) => s.animationRate));
